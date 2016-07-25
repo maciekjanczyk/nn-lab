@@ -76,8 +76,8 @@ class Hopfield:
                     suma = 0.0
                     for vec in vec_set:
                         suma += vec[k] * vec[j]
-                    # self.wagi[k][j] = 1.0/self.N * suma
-                    self.wagi[k][j] = suma
+                    self.wagi[k][j] = 1.0/self.N * suma
+                    #self.wagi[k][j] = suma
 
 
 class Widget(QWidget):
@@ -136,14 +136,17 @@ class Widget(QWidget):
         self.__dodButton = PySide.QtGui.QPushButton('Dodaj do uczenia')
         self.__uczButton = PySide.QtGui.QPushButton('Ucz')
         self.__sprawdzButton = PySide.QtGui.QPushButton('Sprawdz')
+        self.__rozwButton = PySide.QtGui.QPushButton('Rozwijaj')
         self.__czyscButton = PySide.QtGui.QPushButton('Czysc')
         self.__czyscButton.clicked.connect(self.clear)
         self.__dodButton.clicked.connect(self.uczenie)
         self.__uczButton.clicked.connect(self.ucz)
         self.__sprawdzButton.clicked.connect(self.wydobadz)
+        self.__rozwButton.clicked.connect(self.rozwijaj)
         duzylaybutt.addWidget(self.__dodButton)
         duzylaybutt.addWidget(self.__uczButton)
         duzylaybutt.addWidget(self.__sprawdzButton)
+        duzylaybutt.addWidget(self.__rozwButton)
         duzylaybutt.addWidget(self.__czyscButton)
         self.__lay.addLayout(duzylayLabels)
         self.__lay.addLayout(duzylay)
@@ -190,6 +193,10 @@ class Widget(QWidget):
     @Slot()
     def wydobadz(self):
         self.hopfield.SetVector(self.currVec)
+        self.rozwijaj()
+
+    @Slot()
+    def rozwijaj(self):
         out = self.hopfield.Outputs()
         for i in range(0, 25):
             if out[i] == 1.0:
