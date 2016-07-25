@@ -86,7 +86,7 @@ class Widget(QWidget):
         self.treningSet = []
         self.currVec = []
         self.hopfield = hopfield
-        self.setMinimumSize(800, 170)
+        self.setMinimumSize(550, 170)
         self.setWindowTitle('Hopfield demo')
         self.__lay = PySide.QtGui.QVBoxLayout()
         self.przyciski1 = []
@@ -99,6 +99,17 @@ class Widget(QWidget):
         duzylayLabels = PySide.QtGui.QHBoxLayout()
         duzylayLabels.addWidget(PySide.QtGui.QLabel('Input:'))
         duzylayLabels.addWidget(PySide.QtGui.QLabel('Output:'))
+        duzylayKom = PySide.QtGui.QHBoxLayout()
+        duzylayKom1 = PySide.QtGui.QVBoxLayout()
+        duzylayKom1.addWidget(PySide.QtGui.QLabel('Pojemnosc zestawu treningowego:'))
+        duzylayKom1.addWidget(PySide.QtGui.QLabel('Ilosc zapamietanych wzorcow:'))
+        duzylayKom2 = PySide.QtGui.QVBoxLayout()
+        self.__iloscTrening = PySide.QtGui.QLabel('0')
+        self.__iloscUczone = PySide.QtGui.QLabel('0')
+        duzylayKom2.addWidget(self.__iloscTrening)
+        duzylayKom2.addWidget(self.__iloscUczone)
+        duzylayKom.addLayout(duzylayKom1)
+        duzylayKom.addLayout(duzylayKom2)
         for i in range(0, 25):
             buttonek = PySide.QtGui.QPushButton('', self)
             buttonek.setMinimumWidth(1)
@@ -151,6 +162,7 @@ class Widget(QWidget):
         self.__lay.addLayout(duzylayLabels)
         self.__lay.addLayout(duzylay)
         self.__lay.addLayout(duzylaybutt)
+        self.__lay.addLayout(duzylayKom)
         self.setLayout(self.__lay)
         self.clear()
 
@@ -170,12 +182,15 @@ class Widget(QWidget):
     @Slot()
     def uczenie(self):
         self.treningSet.append(self.currVec)
+        self.__iloscTrening.setText(str(int(self.__iloscTrening.text()) + 1))
         self.clear()
 
     @Slot()
     def ucz(self):
         self.hopfield.Training(self.treningSet)
+        self.__iloscUczone.setText(str(len(self.treningSet)))
         self.treningSet = []
+        self.__iloscTrening.setText('0')
 
     @Slot()
     def on_click(self):
