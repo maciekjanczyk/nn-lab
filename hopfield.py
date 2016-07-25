@@ -76,18 +76,19 @@ class Hopfield:
                     suma = 0.0
                     for vec in vec_set:
                         suma += vec[k] * vec[j]
-                    self.wagi[k][j] = 1.0/self.N * suma
-                    #self.wagi[k][j] = suma
+                    self.wagi[k][j] = 1.0 / self.N * suma
+                    # self.wagi[k][j] = suma
 
 
 class Widget(QWidget):
     def __init__(self, hopfield):
         QWidget.__init__(self)
+        self.setWindowFlags(PySide.QtCore.Qt.MSWindowsFixedSizeDialogHint)
         self.treningSet = []
         self.currVec = []
         self.hopfield = hopfield
         self.setMinimumSize(550, 170)
-        self.setWindowTitle('Hopfield demo')
+        self.setWindowTitle('Hopfield demo by Macias @ 2016')
         self.__lay = PySide.QtGui.QVBoxLayout()
         self.przyciski1 = []
         self.przyciski2 = []
@@ -149,16 +150,19 @@ class Widget(QWidget):
         self.__sprawdzButton = PySide.QtGui.QPushButton('Sprawdz')
         self.__rozwButton = PySide.QtGui.QPushButton('Rozwijaj')
         self.__czyscButton = PySide.QtGui.QPushButton('Czysc')
+        self.__aboutButton = PySide.QtGui.QPushButton('O autorze')
         self.__czyscButton.clicked.connect(self.clear)
         self.__dodButton.clicked.connect(self.uczenie)
         self.__uczButton.clicked.connect(self.ucz)
         self.__sprawdzButton.clicked.connect(self.wydobadz)
         self.__rozwButton.clicked.connect(self.rozwijaj)
+        self.__aboutButton.clicked.connect(self.about)
         duzylaybutt.addWidget(self.__dodButton)
         duzylaybutt.addWidget(self.__uczButton)
         duzylaybutt.addWidget(self.__sprawdzButton)
         duzylaybutt.addWidget(self.__rozwButton)
         duzylaybutt.addWidget(self.__czyscButton)
+        duzylaybutt.addWidget(self.__aboutButton)
         self.__lay.addLayout(duzylayLabels)
         self.__lay.addLayout(duzylay)
         self.__lay.addLayout(duzylaybutt)
@@ -218,6 +222,10 @@ class Widget(QWidget):
                 self.przyciski2[i].setStyleSheet("background-color: black")
             else:
                 self.przyciski2[i].setStyleSheet("background-color: white")
+
+    @Slot()
+    def about(self):
+        QMessageBox.information(self, "O autorze", "Autor: Maciej Janczyk\njanczyk@linux.pl\n\nProjekt wykonany na zaliczenie laboratorium \"Sztuczne sieci neuronowe\" prowadzonym na WFAiIS UMK")
 
 
 if __name__ == '__main__':
