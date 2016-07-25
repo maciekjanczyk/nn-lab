@@ -209,7 +209,7 @@ if __name__ == '__main__':
     rozm = 25
     biasy = []
     for i in range(0, rozm):
-        biasy.append(0.0)
+        biasy.append(random.uniform(0.01, 0.2))
     hopf = Hopfield(rozm, biasy)
     app = QApplication(sys.argv)
     widget = Widget(hopf)
