@@ -22,6 +22,8 @@ class Perceptron2D:
         self.w1 = w1
         self.w2 = w2
         self.theta = theta
+        self.kieszonka = []
+        self.kieszonka_c = -1.0
 
     @staticmethod
     def f(s):
@@ -66,6 +68,16 @@ class Perceptron2D:
                 if v == wzorce[ii]:
                     ile_zgadza += 1
                 ii += 1
+            if len(self.kieszonka) == 0:
+                self.kieszonka.append(self.w1)
+                self.kieszonka.append(self.w2)
+            elif ile_zgadza < self.kieszonka_c:
+                self.w1 = self.kieszonka[0]
+                self.w2 = self.kieszonka[1]
+            else:
+                self.kieszonka[0] = self.w1
+                self.kieszonka[1] = self.w2
+                self.kieszonka_c = ile_zgadza
             if ile_zgadza == len(wzorce):
                 nauczone = True
 
