@@ -53,5 +53,28 @@ class BAM:
         return nm
 
 
+def czytaj_z_pliku(name):
+    f = open(name, 'r')
+    ret = []
+    for line in f:
+        splitted = line.split(' ')
+        ret2 = []
+        for ch in splitted:
+            ret2.append(int(ch))
+        ret.append(ret2)
+    return ret
+
+
 if __name__ == '__main__':
-    None
+    x = czytaj_z_pliku('./data/BAM_X_simple.txt')
+    y = czytaj_z_pliku('./data/BAM_Y_simple.txt')
+    bam = BAM(len(x[0]), len(y[0]))
+    for i in range(0, len(x)):
+        print(str.format("Uczenie zestawu {0} {1}...", x[i], y[i]))
+        bam.remember(x[i], y[i])
+    for im in x:
+        print(str.format("Odtwarzanie nazwy na podstawie obrazu {0}...", im))
+        print(str.format("Wynik: {0}", bam.recover_name(im).tolist()))
+    for name in y:
+        print(str.format("Odtwarzanie obrazu na podstawie nazwy {0}...", name))
+        print(str.format("Wynik: {0}", bam.recover_image(name).tolist()))
