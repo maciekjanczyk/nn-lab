@@ -35,5 +35,25 @@ class BCM:
 
         return a
 
+
+def czytaj_z_pliku(name):
+    f = open(name, 'r')
+    ret = []
+    for line in f:
+        splitted = line.split('\t')
+        ret2 = []
+        for ch in splitted:
+            ret2.append(int(ch))
+        ret.append(ret2)
+    return ret
+
+
 if __name__ == '__main__':
-    None
+    x = czytaj_z_pliku('./data/BCM_simple6.txt')
+    bcm = BCM(len(x[0]))
+    for xx in x:
+        print(str.format("Uczenie wektora {0}...", xx))
+        bcm.remember_vector(xx)
+    for xx in x:
+        print(str.format("Trwa odtwarzanie wektora {0}...", xx))
+        print(str.format("Wynik: {0}...", bcm.check_if_known(xx).tolist()))
