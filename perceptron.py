@@ -37,12 +37,6 @@ class Perceptron2D:
         else:
             return -1.0
 
-    '''def PodajNaWejscie(self, x1, x2, x3, x4):
-        self.x1 = x1
-        self.x2 = x2
-        self.x3 = x3
-        self.x4 = x4'''
-
     def PodajNaWejscie(self, vec):
         self.x1 = vec[0]
         self.x2 = vec[1]
@@ -57,9 +51,9 @@ class Perceptron2D:
         nauczone = False
         iter = -1
         w_tmp = []
+        ile_zgadza = 0
         for w in wektory:
             w_tmp.append(w)
-        #NormalizujWektory(w_tmp)
         while (not nauczone) and (iter <= max_iter):
             iter += 1
             ii = -1
@@ -75,12 +69,11 @@ class Perceptron2D:
                     self.theta += wzorce[ii]
             test = []
             for w in w_tmp:
-                #self.PodajNaWejscie(w[0], w[1])
                 self.PodajNaWejscie(w)
                 test.append(self.Wyjscie())
             ile_zgadza = 0
             ii = 0
-            '''for v in test:
+            for v in test:
                 if v == wzorce[ii]:
                     ile_zgadza += 1
                 ii += 1
@@ -90,21 +83,21 @@ class Perceptron2D:
                 self.kieszonka.append(self.w3)
                 self.kieszonka.append(self.w4)
                 self.kieszonka.append(self.theta)
-            elif ile_zgadza < self.kieszonka_c:
-                self.w1 = self.kieszonka[0]
-                self.w2 = self.kieszonka[1]
-                self.w3 = self.kieszonka[2]
-                self.w4 = self.kieszonka[3]
-                self.theta = self.kieszonka[4]
-            else:
+            elif ile_zgadza > self.kieszonka_c:
                 self.kieszonka[0] = self.w1
                 self.kieszonka[1] = self.w2
                 self.kieszonka[2] = self.w3
                 self.kieszonka[3] = self.w4
                 self.kieszonka[4] = self.theta
-                self.kieszonka_c = ile_zgadza'''
+                self.kieszonka_c = ile_zgadza
             if ile_zgadza == len(wzorce):
                 nauczone = True
+        if ile_zgadza < self.kieszonka_c:
+            self.w1 = self.kieszonka[0]
+            self.w2 = self.kieszonka[1]
+            self.w3 = self.kieszonka[2]
+            self.w4 = self.kieszonka[3]
+            self.theta = self.kieszonka[4]
 
     def Klasyfikuj(self, vecs, res):
         ret = []
@@ -146,9 +139,16 @@ if __name__ == '__main__':
         perc = Perceptron2D(random.uniform(-0.1, 0.1), random.uniform(-0.1, 0.1),
                             random.uniform(-0.1, 0.1), random.uniform(-0.1, 0.1), 1.0, 1.0)
         vecs, wzorc = czytaj_z_pliku('./data/iris_2vs3_{0}_tr.txt'.format(letter))
+        indeksy = range(0, len(vecs))
+        random.shuffle(indeksy)
         print(str.format("Trwa uczenie zestawu iris_2vs3_{0}...".format(letter)))
-        perc.Uczenie(vecs, wzorc, 1000)
+        vecs2 = []
+        wzorc2 = []
+        for i in indeksy:
+            vecs2.append(vecs[i])
+            wzorc2.append(wzorc[i])
+        perc.Uczenie(vecs, wzorc, 300)
         test, test_y = czytaj_z_pliku('./data/iris_2vs3_{0}_te.txt'.format(letter))
         klas = perc.Klasyfikuj(test, test_y)
-        print(str.format("Wynik testu: {0}%", score(test_y, klas)))
+        print(str.format("Wynik testu: {0}%\n", score(test_y, klas)))
 
