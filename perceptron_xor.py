@@ -14,11 +14,11 @@ def NormalizujWektory(vs):
 
 
 class Perceptron:
-    def __init__(self, w1, w2):
-        self.x1 = 0.0
-        self.x2 = 0.0
-        self.w1 = w1
-        self.w2 = w2
+    def __init__(self, wags):
+        self.w = []
+        self.x = []
+        for wag in wags:
+            self.w.append(wag)
 
     @staticmethod
     def f(s):
@@ -39,29 +39,38 @@ class Perceptron:
                 return 0.0
 
     def PodajNaWejscie(self, vec):
-        self.x1 = vec[0]
-        self.x2 = vec[1]
+        self.x = vec
 
     def Wyjscie(self):
-        suma = self.x1 * self.w1 + self.x2 * self.w2
+        suma = 0
+        for i in range(0, len(self.x)):
+            suma += self.x[i] * self.w[i]
         return Perceptron.sigmoid(suma)
 
 
 class SiecXOR:
-    def __init__(self, theta):
+    def __init__(self, theta, dim=2):
         self.warstwa = []
-        self.warstwa.append(Perceptron(0.1, 0.8))
-        self.warstwa.append(Perceptron(0.4, 0.6))
-        self.output = Perceptron(0.3, 0.9)
+        self.DIM = dim
+        for i in range(0, self.DIM):
+            wags = []
+            for j in range(0, self.DIM):
+                wags.append(random.uniform(0.05, 0.2))
+            self.warstwa.append(Perceptron(wags))
+        # self.warstwa.append(Perceptron(0.4, 0.6))
+        wags = []
+        for j in range(0, self.DIM):
+            wags.append(random.uniform(0.05, 0.2))
+        self.output = Perceptron(wags)
         self.EPOKI = 0
         self.theta = theta
 
     def PodajNaWejscie(self, w):
+        wyj = []
         for war in self.warstwa:
             war.PodajNaWejscie(w)
-        wyj1 = self.warstwa[0].Wyjscie()
-        wyj2 = self.warstwa[1].Wyjscie()
-        self.output.PodajNaWejscie([wyj1, wyj2])
+            wyj.append(war.Wyjscie())
+        self.output.PodajNaWejscie(wyj)
 
     def Wyjscie(self):
         return self.output.Wyjscie()
@@ -76,43 +85,92 @@ class SiecXOR:
                 if outO == wzorc[i]:
                     continue
                 sigmaO = outO * (1.0 - outO) * (wzorc[i] - outO)
-                self.output.w1 += self.theta * sigmaO * self.warstwa[0].Wyjscie()
-                self.output.w2 += self.theta * sigmaO * self.warstwa[1].Wyjscie()
+                for ii in range(0, self.DIM):
+                    self.output.w[ii] += self.theta * sigmaO * self.warstwa[ii].Wyjscie()
                 # warstwa ukryta
-                outA = self.warstwa[0].Wyjscie()
-                sigmaA = outA * (1.0 - outA) * (sigmaO * self.output.w1)
-                outB = self.warstwa[1].Wyjscie()
-                sigmaB = outB * (1.0 - outB) * (sigmaO * self.output.w2)
-                self.warstwa[0].w1 += self.theta * sigmaA * vecs[i][0]
-                self.warstwa[0].w2 += self.theta * sigmaA * vecs[i][1]
-                self.warstwa[1].w1 += self.theta * sigmaB * vecs[i][0]
-                self.warstwa[1].w2 += self.theta * sigmaB * vecs[i][1]
-        print("OK")
+                sigmas = []
+                for ii in range(0, self.DIM):
+                    outW = self.warstwa[ii].Wyjscie()
+                    sigmas.append(outW * (1.0 - outW) * (sigmaO * self.output.w[ii]))
+                for ii in range(0, self.DIM):
+                    for j in range(0, self.DIM):
+                        self.warstwa[ii].w[j] += self.theta * sigmas[ii] * vecs[i][j]
 
     def Klasyfikuj(self, vecs, res):
         ret = []
         i = 0
+        przeszlo = 0
         for v in vecs:
             self.PodajNaWejscie(v)
             wyjscie = self.Wyjscie()
             ret.append(wyjscie)
             print(str.format("Vec: {0}, Test: {1}, Result: {2}", v, wyjscie, res[i]))
+            if (res[i] == 1.0 and wyjscie > 0.5) or (res[i] == 0.0 and wyjscie <= 0.5):
+                przeszlo += 1
             i += 1
+        print("Wynik testu: {0}%".format(float(przeszlo) / float(len(vecs)) * 100.0))
         return ret
 
 
+class ZestawDanych:
+    def __init__(self, plik1, plik2):
+        # pozycja[0] to id
+        # pozycja[10] to klasa
+        # plik1 - zestaw treningowy
+        # plik2 - zestaw testowy
+        self.x_trening = None
+        self.y_trening = None
+        self.x_testy = None
+        self.y_testy = None
+        with open(plik1, 'r') as f:
+            linie = f.readlines()
+            xt = []
+            yt = []
+            j = 0
+            for linia in linie:
+                rozwalone = linia.split(',')
+                lista = []
+                for i in range(1, 10):
+                    lista.append(float(rozwalone[i]))
+                xt.append(lista)
+                if float(rozwalone[10][0]) == 2.0:
+                    yt.append(0.0)
+                else:
+                    yt.append(1.0)
+                j += 1
+            self.x_trening = xt
+            self.y_trening = yt
+        with open(plik2, 'r') as f:
+            linie = f.readlines()
+            xt = []
+            yt = []
+            j = 0
+            for linia in linie:
+                rozwalone = linia.split(',')
+                lista = []
+                for i in range(1, 10):
+                    lista.append(float(rozwalone[i]))
+                xt.append(lista)
+                if float(rozwalone[10][0]) == 2.0:
+                    yt.append(0.0)
+                else:
+                    yt.append(1.0)
+                j += 1
+            self.x_testy = xt
+            self.y_testy = yt
+
+    def zwroc_dane(self):
+        return (self.x_trening, self.y_trening, self.x_testy, self.y_testy)
+
 
 if __name__ == '__main__':
-    perc = SiecXOR(1.0)
-    vecs = [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]
-    wzorc = [0.0, 1.0, 1.0, 0.0]
+    perc = SiecXOR(0.3, 9)
+    # vecs = [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]
+    # wzorc = [0.0, 1.0, 1.0, 0.0]
+    #vecs = [[-1.0, -1.0], [-1.0, 1.0], [1.0, -1.0], [1.0, 1.0]]
+    #wzorc = [0.0, 1.0, 1.0, 0.0]
+    dane = ZestawDanych('./data/trening.data', './data/test.data')
+    vecs, wzorc, xt, yt = dane.zwroc_dane()
     print("Trwa uczenie standardowego zestawu...")
-    perc.Uczenie(vecs, wzorc, 40000)
-    perc.Klasyfikuj(vecs, wzorc)
-    perc = SiecXOR(1.0)
-    vecs = [[1.0, 1.0], [1.0, 3.0], [3.0, 1.0], [3.0, 3.0],
-            [0.0, 0.0], [0.0, 4.0], [4.0, 0.0], [4.0, 4.0]]
-    wzorc = [0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0]
-    print("Trwa uczenie rozszerzonego zestawu...")
-    perc.Uczenie(vecs, wzorc, 20000)
-    perc.Klasyfikuj(vecs, wzorc)
+    perc.Uczenie(vecs, wzorc, 100)
+    perc.Klasyfikuj(xt, yt)
