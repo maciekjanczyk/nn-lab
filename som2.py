@@ -41,7 +41,7 @@ class SOM:
         self.eta = 0.005
         self.p_min = 0.9999
         #self.promien = 0.03
-        self.promien = 2
+        self.promien = 5
         self.poletr = self.ptr_pkt([0.0, 0.0], [0.5, 1.0], [1.0, 0.0])
         self.T = 1
         self.EPOKI = 0
@@ -62,7 +62,7 @@ class SOM:
         points, = ax.plot(x, y, "o-")
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
-        plt.pause(0.0001)
+        plt.pause(0.0000001)
         for i in range(0, epoki, 1):
             self.pojedynczaIteracja()
             if self.T % 10 != 0:
@@ -73,22 +73,24 @@ class SOM:
                 x.append(w.x)
                 y.append(w.y)
             points.set_data(x, y)
-            plt.pause(0.0001)
+            plt.pause(0.0000001)
         plt.plot(x, y, "o-")
         plt.show()
 
     def pojedynczaIteracja(self):
         self.winner = None
         self.currentVec = None
-        #self.losujWektorWejscia()
         self.currentVec = self.vecSet.pop()
         self.wylonWygranego()
         self.modyfikujWagiZwyciezcy()
         self.T += 1
-        if self.T == 10000:
-            self.K = 0.2
-        elif self.T == 10000:
-            self.K = 0.1
+        self.K *= 0.99995
+        if self.promien > 1.0:
+            self.promien *= 0.99995
+        elif self.promien < 1.0:
+            self.promien = 1.0
+        if self.T % 500 == 0:
+            print("Epoka: {0}, K: {1}, Promien: {2}".format(self.T, self.K, self.promien))
 
     def ptr_pkt(self, p1, p2, p3):
         p1p2 = self.__d(p1, p2)
@@ -107,8 +109,6 @@ class SOM:
 
     def dodajPunkty(self):
         for i in range(0, self.N, 1):
-            #v = [-1.0, -1.0]
-            #while not self.czyNalezyDoTr(v):
             v = [random.uniform(0.375, 0.625), random.uniform(0.25, 0.5)]
             self.W.append(Wezel(v[0], v[1], 1.0))
 
