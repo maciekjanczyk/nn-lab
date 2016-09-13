@@ -39,16 +39,20 @@ class Perceptron:
 
 
 class MLP:
-    def __init__(self, learn_rate, dim=2):
+    def __init__(self, learn_rate, dim=2, hidden_layers_count=1):
         self.current_err = 0.0
         self.layers = []
         self.current_input = []
         self.dim = dim
-        for i in range(0, self.dim):
-            weights = []
-            for j in range(0, self.dim):
-                weights.append(random.uniform(0.05, 0.2))
-            self.layers.append(Perceptron(weights))
+        self.hidden_layers_count = hidden_layers_count
+        for i in range(0, hidden_layers_count):
+            self.layers.append(([]))
+        for j in range(0, hidden_layers_count):
+            for i in range(0, self.dim):
+                weights = []
+                for jj in range(0, self.dim):
+                    weights.append(random.uniform(0.05, 0.2))
+                self.layers[j].append(Perceptron(weights))
         weights = []
         for j in range(0, self.dim):
             weights.append(random.uniform(0.05, 0.2))
@@ -58,11 +62,16 @@ class MLP:
 
     def set_input(self, vector):
         self.current_input = vector
-        outs = []
-        for war in self.layers:
+        outs = [[]]
+        for war in self.layers[0]:
             war.set_input(vector)
-            outs.append(war.output())
-        self.output_layer.set_input(outs)
+            outs[0].append(war.output())
+        for i in range(1, self.hidden_layers_count):
+            outs.append([])
+            for perceptron in self.layers[i]:
+                perceptron.set_input(outs[i - 1])
+                outs[i].append(perceptron.output())
+        self.output_layer.set_input(outs[self.hidden_layers_count - 1])
 
     def output(self):
         return self.output_layer.output()
@@ -81,15 +90,28 @@ class MLP:
                     continue
                 sigma_o = out_o * (1.0 - out_o) * (y_vectors[i] - out_o)
                 for ii in range(0, self.dim):
-                    self.output_layer.w[ii] += self.learn_rate * sigma_o * self.layers[ii].output()
+                    self.output_layer.w[ii] += self.learn_rate * sigma_o * self.layers[self.hidden_layers_count - 1][ii].output()
                 sigmas = []
+                for ii in range(0, self.hidden_layers_count):
+                    sigmas.append([])
                 for ii in range(0, self.dim):
-                    outW = self.layers[ii].output()
-                    sigmas.append(outW * (1.0 - outW) * (sigma_o * self.output_layer.w[ii]))
+                    outW = self.layers[self.hidden_layers_count - 1][ii].output()
+                    sigmas[self.hidden_layers_count - 1].append(outW * (1.0 - outW) * (sigma_o * self.output_layer.w[ii]))
                 for ii in range(0, self.dim):
-                    self.current_err += math.fabs(sigmas[ii])
+                    self.current_err += math.fabs(sigmas[self.hidden_layers_count - 1][ii])
                     for j in range(0, self.dim):
-                        self.layers[ii].w[j] += self.learn_rate * sigmas[ii] * x_vectors[i][j]
+                        self.layers[self.hidden_layers_count - 1][ii].w[j] += self.learn_rate * sigmas[self.hidden_layers_count - 1][ii] * x_vectors[i][j]
+                for jj in range(self.hidden_layers_count - 2, -1, -1):
+                    for ii in range(0, self.dim):
+                        outW = self.layers[jj][ii].output()
+                        sigma_factor = 0
+                        for kk in range(0, self.dim):
+                            sigma_factor += sigmas[jj + 1][kk] * self.layers[jj + 1][kk].w[ii]
+                        sigmas[jj].append(outW * (1.0 - outW) * sigma_factor)
+                    for ii in range(0, self.dim):
+                        self.current_err += math.fabs(sigmas[jj][ii])
+                        for j in range(0, self.dim):
+                            self.layers[jj][ii].w[j] += self.learn_rate * sigmas[jj + 1][ii] * x_vectors[i][j]
                 self.current_err += math.fabs(sigma_o)
 
     def do_classification(self, x_vectors, y_vectors):
@@ -182,6 +204,27 @@ class DataLoader:
             for i in range(0, len(vector)):
                 vector[i] /= max_class_value
 
+    @staticmethod
+    def normalize2(vector):
+        min_class_value = float('inf')
+        for i in range(len(vector)):
+            for j in range(len(vector[0])):
+                if vector[i][j] < min_class_value:
+                    min_class_value = vector[i][j]
+        if min_class_value < 0.0:
+            for i in range(0, len(vector)):
+                for j in range(0, len(vector[0])):
+                    vector[i][j] += math.fabs(min_class_value)
+        max_class_value = float('-inf')
+        for i in range(len(vector)):
+            for j in range(len(vector[0])):
+                if vector[i][j] > max_class_value:
+                    max_class_value = vector[i][j]
+        if max_class_value > 1.0:
+            for i in range(0, len(vector)):
+                for j in range(0, len(vector[0])):
+                    vector[i][j] /= math.fabs(max_class_value)
+
     def get_data(self, classification=False, normalize_outputs=False, normalize_inputs=False):
         if classification:
             self.class_values_training.sort()
@@ -206,9 +249,9 @@ class DataLoader:
             if self.has_test_set:
                 self.normalize(self.y_tests)
         if normalize_inputs:
-            self.normalize(self.x_training)
+            self.normalize2(self.x_training)
             if self.has_test_set:
-                self.normalize(self.x_tests)
+                self.normalize2(self.x_tests)
         if self.has_test_set:
             return self.x_training, self.y_training, self.x_tests, self.y_tests
         else:
@@ -216,20 +259,8 @@ class DataLoader:
 
 
 if __name__ == '__main__':
-    print("Load data vectors...")
-    data_loader = DataLoader('./data/tic-tac-toe.data')
-    x, y = data_loader.get_data(classification=True)
-    net = MLP(0.03, 9)
-    print("Learning on progress...")
-    net.learn(x, y, 100)
-    net.do_classification(x, y)
-    '''inp = ''
-    while input != 'quit()':
-        print("Input: ")
-        inp = raw_input()
-        separated = str(inp).split(',')
-        vector = []
-        for item in separated:
-            vector.append(float(item))
-        net.set_input(vector)
-        print("Net answer: {0}".format(net.output()))'''
+    data_loader = DataLoader('./data/trening.data', './data/test.data', ignore_fields=[0])
+    x_training, y_training, x_test, y_test = data_loader.get_data(classification=True)
+    net = MLP(0.03, len(x_training[0]), 10)
+    net.learn(x_training, y_training, 10)
+    net.do_classification(x_test, y_test)
