@@ -1,5 +1,6 @@
 import math
 import random
+import numpy as np
 
 
 class Perceptron:
@@ -107,9 +108,10 @@ class MLP:
 
 
 class DataLoader:
-    def __init__(self, file_name_training, file_name_test, fill_missing=0.0, ignore_fields=None, class_field=-1, separator=','):
+    def __init__(self, file_name_training, file_name_test='', fill_missing=0.0, ignore_fields=None, class_field=-1, separator=','):
         if ignore_fields is None:
             ignore_fields = []
+        self.has_test_set = False
         self.x_training = None
         self.y_training = None
         self.x_tests = None
@@ -117,6 +119,8 @@ class DataLoader:
         self.class_field = class_field
         self.xt = []
         self.yt = []
+        self.class_values_training = []
+        self.class_values_test = []
         self.first_iteration = True
         with open(file_name_training, 'r') as f:
             lines = f.readlines()
@@ -138,28 +142,34 @@ class DataLoader:
                             values.append(float(fill_missing))
                 self.xt.append(values)
                 self.yt.append(float(separated[self.class_field]))
+                if float(separated[self.class_field]) not in self.class_values_training:
+                    self.class_values_training.append(float(separated[self.class_field]))
                 j += 1
             self.x_training = self.xt
             self.y_training = self.yt
-        with open(file_name_test, 'r') as f:
-            lines = f.readlines()
-            self.xt = []
-            self.yt = []
-            j = 0
-            for line in lines:
-                separated = line.split(separator)
-                values = []
-                for i in range(0, len(separated)):
-                    if i not in ignore_fields and i != self.class_field:
-                        try:
-                            values.append(float(separated[i]))
-                        except ValueError:
-                            values.append(float(fill_missing))
-                self.xt.append(values)
-                self.yt.append(float(separated[self.class_field]))
-                j += 1
-            self.x_tests = self.xt
-            self.y_tests = self.yt
+        if file_name_test != '':
+            self.has_test_set = True
+            with open(file_name_test, 'r') as f:
+                lines = f.readlines()
+                self.xt = []
+                self.yt = []
+                j = 0
+                for line in lines:
+                    separated = line.split(separator)
+                    values = []
+                    for i in range(0, len(separated)):
+                        if i not in ignore_fields and i != self.class_field:
+                            try:
+                                values.append(float(separated[i]))
+                            except ValueError:
+                                values.append(float(fill_missing))
+                    self.xt.append(values)
+                    self.yt.append(float(separated[self.class_field]))
+                    if float(separated[self.class_field]) not in self.class_values_test:
+                        self.class_values_test.append(float(separated[self.class_field]))
+                    j += 1
+                self.x_tests = self.xt
+                self.y_tests = self.yt
 
     @staticmethod
     def normalize(vector):
@@ -172,30 +182,54 @@ class DataLoader:
             for i in range(0, len(vector)):
                 vector[i] /= max_class_value
 
-    def get_data(self, normalize_outputs=False, normalize_inputs=False):
+    def get_data(self, classification=False, normalize_outputs=False, normalize_inputs=False):
+        if classification:
+            self.class_values_training.sort()
+            space_training = np.linspace(0.0, 1.0, len(self.class_values_training))
+            space_test = []
+            if self.has_test_set:
+                self.class_values_test.sort()
+                space_test = np.linspace(0.0, 1.0, len(self.class_values_test))
+            for i in range(0, len(self.y_training)):
+                for j in range(0, len(self.class_values_training)):
+                    if self.y_training[i] == self.class_values_training[j]:
+                        self.y_training[i] = space_training[j]
+                        continue
+            if self.has_test_set:
+                for i in range(0, len(self.y_tests)):
+                    for j in range(0, len(self.class_values_test)):
+                        if self.y_tests[i] == self.class_values_test[j]:
+                            self.y_tests[i] = space_test[j]
+                            continue
         if normalize_outputs:
             self.normalize(self.y_training)
-            self.normalize(self.y_tests)
+            if self.has_test_set:
+                self.normalize(self.y_tests)
         if normalize_inputs:
             self.normalize(self.x_training)
-            self.normalize(self.x_tests)
-        return self.x_training, self.y_training, self.x_tests, self.y_tests
+            if self.has_test_set:
+                self.normalize(self.x_tests)
+        if self.has_test_set:
+            return self.x_training, self.y_training, self.x_tests, self.y_tests
+        else:
+            return self.x_training, self.y_training
 
 
 if __name__ == '__main__':
-    dane = DataLoader('./data/trening.data', './data/test.data', ignore_fields=[0])
-    vecs, wzorc, xt, yt = dane.get_data(normalize_outputs=True)
-    wx = []
-    wy = []
-    wy2 = []
-    lepok = 5
-    while lepok <= 200:
-        perc = MLP(0.03, 9)
-        print("Trwa uczenie Epoka {0}/200...".format(lepok))
-        perc.learn(vecs, wzorc, lepok)
-        score = perc.do_classification(xt, yt)
-        wx.append(lepok)
-        wy.append(score)
-        wy2.append(perc.output_error())
-        lepok += 5
-
+    print("Load data vectors...")
+    data_loader = DataLoader('./data/tic-tac-toe.data')
+    x, y = data_loader.get_data(classification=True)
+    net = MLP(0.03, 9)
+    print("Learning on progress...")
+    net.learn(x, y, 100)
+    net.do_classification(x, y)
+    '''inp = ''
+    while input != 'quit()':
+        print("Input: ")
+        inp = raw_input()
+        separated = str(inp).split(',')
+        vector = []
+        for item in separated:
+            vector.append(float(item))
+        net.set_input(vector)
+        print("Net answer: {0}".format(net.output()))'''
