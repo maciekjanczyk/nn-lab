@@ -4,7 +4,8 @@ import numpy as np
 
 
 class Perceptron:
-    def __init__(self, weights):
+    def __init__(self, weights, bias):
+        self.bias = bias
         self.w = []
         self.x = []
         for weight in weights:
@@ -35,11 +36,12 @@ class Perceptron:
         sum = 0
         for i in range(0, len(self.x)):
             sum += self.x[i] * self.w[i]
-        return Perceptron.sigmoid_activation(sum)
+        return Perceptron.sigmoid_activation(sum + self.bias)
 
 
 class MLP:
-    def __init__(self, learn_rate, dim=2, hidden_layers_count=1):
+    def __init__(self, learn_rate, dim=2, hidden_layers_count=1, bias=1):
+        self.bias = bias
         self.current_err = 0.0
         self.layers = []
         self.current_input = []
@@ -52,11 +54,11 @@ class MLP:
                 weights = []
                 for jj in range(0, self.dim):
                     weights.append(random.uniform(0.05, 0.2))
-                self.layers[j].append(Perceptron(weights))
+                self.layers[j].append(Perceptron(weights, self.bias))
         weights = []
         for j in range(0, self.dim):
             weights.append(random.uniform(0.05, 0.2))
-        self.output_layer = Perceptron(weights)
+        self.output_layer = Perceptron(weights, self.bias)
         self.epochs = 0
         self.learn_rate = learn_rate
 
@@ -92,26 +94,48 @@ class MLP:
                 for ii in range(0, self.dim):
                     self.output_layer.w[ii] += self.learn_rate * sigma_o * self.layers[self.hidden_layers_count - 1][ii].output()
                 sigmas = []
-                for ii in range(0, self.hidden_layers_count):
-                    sigmas.append([])
-                for ii in range(0, self.dim):
-                    outW = self.layers[self.hidden_layers_count - 1][ii].output()
-                    sigmas[self.hidden_layers_count - 1].append(outW * (1.0 - outW) * (sigma_o * self.output_layer.w[ii]))
-                for ii in range(0, self.dim):
-                    self.current_err += math.fabs(sigmas[self.hidden_layers_count - 1][ii])
-                    for j in range(0, self.dim):
-                        self.layers[self.hidden_layers_count - 1][ii].w[j] += self.learn_rate * sigmas[self.hidden_layers_count - 1][ii] * x_vectors[i][j]
-                for jj in range(self.hidden_layers_count - 2, -1, -1):
+                if self.hidden_layers_count > 1:
+                    for ii in range(0, self.hidden_layers_count):
+                        sigmas.append([])
                     for ii in range(0, self.dim):
-                        outW = self.layers[jj][ii].output()
+                        out_w = self.layers[self.hidden_layers_count - 1][ii].output()
+                        sigmas[self.hidden_layers_count - 1].append(out_w * (1.0 - out_w) * (sigma_o * self.output_layer.w[ii]))
+                    for ii in range(0, self.dim):
+                        self.current_err += math.fabs(sigmas[self.hidden_layers_count - 1][ii])
+                        for j in range(0, self.dim):
+                            self.layers[self.hidden_layers_count - 1][ii].w[j] += self.learn_rate * sigmas[self.hidden_layers_count - 1][ii] * self.layers[self.hidden_layers_count - 2][ii].output()
+                    for jj in range(self.hidden_layers_count - 2, 0, -1):
+                        for ii in range(0, self.dim):
+                            out_w = self.layers[jj][ii].output()
+                            sigma_factor = 0
+                            for kk in range(0, self.dim):
+                                sigma_factor += sigmas[jj + 1][kk] * self.layers[jj + 1][kk].w[ii]
+                            sigmas[jj].append(out_w * (1.0 - out_w) * sigma_factor)
+                        for ii in range(0, self.dim):
+                            self.current_err += math.fabs(sigmas[jj][ii])
+                            for j in range(0, self.dim):
+                                self.layers[jj][ii].w[j] += self.learn_rate * sigmas[jj + 1][ii] * self.layers[jj - 1].output()
+                    for ii in range(0, self.dim):
+                        out_w = self.layers[0][ii].output()
                         sigma_factor = 0
                         for kk in range(0, self.dim):
-                            sigma_factor += sigmas[jj + 1][kk] * self.layers[jj + 1][kk].w[ii]
-                        sigmas[jj].append(outW * (1.0 - outW) * sigma_factor)
+                            sigma_factor += sigmas[1][kk] * self.layers[1][kk].w[ii]
+                        sigmas[0].append(out_w * (1.0 - out_w) * sigma_factor)
                     for ii in range(0, self.dim):
-                        self.current_err += math.fabs(sigmas[jj][ii])
+                        self.current_err += math.fabs(sigmas[0][ii])
                         for j in range(0, self.dim):
-                            self.layers[jj][ii].w[j] += self.learn_rate * sigmas[jj + 1][ii] * x_vectors[i][j]
+                            self.layers[0][ii].w[j] += self.learn_rate * sigmas[0][ii] * x_vectors[i][j]
+                else:
+                    for ii in range(0, self.hidden_layers_count):
+                        sigmas.append([])
+                    for ii in range(0, self.dim):
+                        out_w = self.layers[self.hidden_layers_count - 1][ii].output()
+                        sigmas[self.hidden_layers_count - 1].append(
+                            out_w * (1.0 - out_w) * (sigma_o * self.output_layer.w[ii]))
+                    for ii in range(0, self.dim):
+                        self.current_err += math.fabs(sigmas[self.hidden_layers_count - 1][ii])
+                        for j in range(0, self.dim):
+                            self.layers[self.hidden_layers_count - 1][ii].w[j] += self.learn_rate * sigmas[self.hidden_layers_count - 1][ii] * x_vectors[i][j]
                 self.current_err += math.fabs(sigma_o)
 
     def do_classification(self, x_vectors, y_vectors):
@@ -225,7 +249,22 @@ class DataLoader:
                 for j in range(0, len(vector[0])):
                     vector[i][j] /= math.fabs(max_class_value)
 
-    def get_data(self, classification=False, normalize_outputs=False, normalize_inputs=False):
+    def __add_product(self):
+        for i in range(0, len(self.x_training)):
+            product = 1
+            for j in range(0, len(self.x_training[i])):
+                product *= self.x_training[i][j]
+            self.x_training[i].append(product)
+        if self.has_test_set:
+            for i in range(0, len(self.x_tests)):
+                product = 1
+                for j in range(0, len(self.x_tests[i])):
+                    product += self.x_tests[i][j]
+                self.x_tests[i].append(product)
+
+    def get_data(self, classification=False, normalize_outputs=False, normalize_inputs=False, add_product=False):
+        if add_product:
+            self.__add_product()
         if classification:
             self.class_values_training.sort()
             space_training = np.linspace(0.0, 1.0, len(self.class_values_training))
@@ -259,8 +298,9 @@ class DataLoader:
 
 
 if __name__ == '__main__':
-    data_loader = DataLoader('./data/trening.data', './data/test.data', ignore_fields=[0])
-    x_training, y_training, x_test, y_test = data_loader.get_data(classification=True)
-    net = MLP(0.03, len(x_training[0]), 10)
-    net.learn(x_training, y_training, 10)
-    net.do_classification(x_test, y_test)
+    data_loader = DataLoader('./data/xor_ext.txt', separator='\t')
+    x_training, y_training = data_loader.get_data(classification=True, add_product=True)
+    net = MLP(learn_rate=0.5, dim=3, hidden_layers_count=1)
+    print('Learning in progress...')
+    net.learn(x_training, y_training, 10000)
+    net.do_classification(x_training, y_training)
