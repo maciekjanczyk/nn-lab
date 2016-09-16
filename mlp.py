@@ -114,7 +114,7 @@ class MLP:
                         for ii in range(0, self.dim):
                             self.current_err += math.fabs(sigmas[jj][ii])
                             for j in range(0, self.dim):
-                                self.layers[jj][ii].w[j] += self.learn_rate * sigmas[jj + 1][ii] * self.layers[jj - 1].output()
+                                self.layers[jj][ii].w[j] += self.learn_rate * sigmas[jj + 1][ii] * self.layers[jj - 1][ii].output()
                     for ii in range(0, self.dim):
                         out_w = self.layers[0][ii].output()
                         sigma_factor = 0
@@ -300,7 +300,7 @@ class DataLoader:
 if __name__ == '__main__':
     data_loader = DataLoader('./data/xor_ext.txt', separator='\t')
     x_training, y_training = data_loader.get_data(classification=True, add_product=True)
-    net = MLP(learn_rate=0.5, dim=3, hidden_layers_count=1)
+    net = MLP(learn_rate=0.5, dim=3, hidden_layers_count=2)
     print('Learning in progress...')
-    net.learn(x_training, y_training, 10000)
+    net.learn(x_training, y_training, 2000)
     net.do_classification(x_training, y_training)
