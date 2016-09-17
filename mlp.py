@@ -81,7 +81,7 @@ class MLP:
     def output_error(self):
         return self.current_err
 
-    def learn(self, x_vectors, y_vectors, epochs):
+    def learn(self, x_vectors, y_vectors, epochs, log=False):
         self.epochs = epochs
         for k in range(0, self.epochs):
             for i in range(0, len(x_vectors)):
@@ -137,6 +137,8 @@ class MLP:
                         for j in range(0, self.dim):
                             self.layers[self.hidden_layers_count - 1][ii].w[j] += self.learn_rate * sigmas[self.hidden_layers_count - 1][ii] * x_vectors[i][j]
                 self.current_err += math.fabs(sigma_o)
+            if log:
+                print("Epoch {0}/{1}, error: {2}".format(k, epochs, self.current_err))
 
     def do_classification(self, x_vectors, y_vectors):
         i = 0
@@ -298,9 +300,10 @@ class DataLoader:
 
 
 if __name__ == '__main__':
-    data_loader = DataLoader('./data/xor_ext.txt', separator='\t')
-    x_training, y_training = data_loader.get_data(classification=True, add_product=True)
-    net = MLP(learn_rate=0.5, dim=3, hidden_layers_count=2)
+    data_loader = DataLoader('./data/trening.data', './data/test.data', separator=',', ignore_fields=[0])
+    x_training, y_training, x_test,y_test = data_loader.get_data(classification=True)
+    dim = len(x_training[0])
+    net = MLP(learn_rate=0.3, dim=dim, hidden_layers_count=2)
     print('Learning in progress...')
-    net.learn(x_training, y_training, 2000)
-    net.do_classification(x_training, y_training)
+    net.learn(x_training, y_training, 200, log=True)
+    net.do_classification(x_test, y_test)
