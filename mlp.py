@@ -40,7 +40,7 @@ class Perceptron:
 
 
 class MLP:
-    def __init__(self, learn_rate, dim=2, hidden_layers_count=1, bias=1):
+    def __init__(self, learn_rate, dim=2, hidden_layers_count=1, bias=1.0):
         self.bias = bias
         self.current_err = 0.0
         self.layers = []
@@ -65,9 +65,9 @@ class MLP:
     def set_input(self, vector):
         self.current_input = vector
         outs = [[]]
-        for war in self.layers[0]:
-            war.set_input(vector)
-            outs[0].append(war.output())
+        for node in self.layers[0]:
+            node.set_input(vector)
+            outs[0].append(node.output())
         for i in range(1, self.hidden_layers_count):
             outs.append([])
             for perceptron in self.layers[i]:
@@ -114,7 +114,7 @@ class MLP:
                         for ii in range(0, self.dim):
                             self.current_err += math.fabs(sigmas[jj][ii])
                             for j in range(0, self.dim):
-                                self.layers[jj][ii].w[j] += self.learn_rate * sigmas[jj + 1][ii] * self.layers[jj - 1][ii].output()
+                                self.layers[jj][ii].w[j] += self.learn_rate * sigmas[jj][ii] * self.layers[jj - 1][ii].output()
                     for ii in range(0, self.dim):
                         out_w = self.layers[0][ii].output()
                         sigma_factor = 0
@@ -303,7 +303,7 @@ if __name__ == '__main__':
     data_loader = DataLoader('./data/trening.data', './data/test.data', separator=',', ignore_fields=[0])
     x_training, y_training, x_test,y_test = data_loader.get_data(classification=True)
     dim = len(x_training[0])
-    net = MLP(learn_rate=0.3, dim=dim, hidden_layers_count=2)
+    net = MLP(learn_rate=0.5, dim=dim, hidden_layers_count=2, bias=1.0)
     print('Learning in progress...')
-    net.learn(x_training, y_training, 200, log=True)
+    net.learn(x_training, y_training, 1000, log=True)
     net.do_classification(x_test, y_test)
